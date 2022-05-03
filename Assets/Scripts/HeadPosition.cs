@@ -1,5 +1,6 @@
 using UnityEngine;
 
+//Same Script from 3D Platformer.
 public class HeadPosition : MonoBehaviour
 {
 	public AnimationCurve slideCurve;

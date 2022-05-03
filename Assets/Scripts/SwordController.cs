@@ -2,49 +2,36 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+//Extension of weapon controller.
+//Currently taking the form of a Baseball Bat Weapon in game.
 public class SwordController : WeaponController
 {
+	//The damage information that will be passed down to its target when attack landed.
 	protected Damage damage = new Damage();
 
+	//The weapon object in player's hand.
 	public GameObject objWeapon;
 
-	public Color colorA;
+	//layers that receives player damage.
+	public LayerMask layerMask;
 
-	public Color colorB;
+	//Curves that returns exact damage amount, according to charge time.
+	public AnimationCurve slashDamageCurve;
+	public AnimationCurve slamSlashDamageCurve;
 
-	public AudioClip clip;
-
-	public AudioClip sfxSwitchA;
-
-	public AudioClip sfxSwitchB;
-
-	public AudioClip sfxSlashCharge;
-
-	public AudioClip sfxSlamSlash;
-
-	public AudioClip sfxBlock;
-
-	public AnimationCurve slashDamageCurve = AnimationCurve.Linear(0f, 0f, 1f, 1f);
-
-	public AnimationCurve slamSlashDamageCurve = AnimationCurve.Linear(0f, 40f, 1f, 75f);
-
+	//Switches on off, so that player slashes 2 ways.
 	public bool rightSlash;
 
-	public float rightSlashTimer;
-
 	public float cooldown;
-
-	public GameObject slapVFX; 
 
 	private void OnEnable()
 	{
 		cooldown = 0f;
-		base.attackState = 0;
+		attackState = 0;
 		if (!objWeapon.activeInHierarchy)
 		{
 			objWeapon.SetActive(true);
 		}
-		rightSlashTimer = 0f;
 		rightSlash = false;
 		player.bob.Sway(new Vector4(0f, 0f, -5f, 2f));
 	}
@@ -62,9 +49,10 @@ public class SwordController : WeaponController
 		grounder.OnGround -= Ground;
 	}
 
+	//sways player camera when started charging an attack.
 	public void Charge()
 	{
-		switch (base.attackIndex)
+		switch (attackIndex)
 		{
 		case 0:
 		case 1:
@@ -76,91 +64,81 @@ public class SwordController : WeaponController
 		}
 	}
 
+	//sways player camera depending on attack types.
 	public void Sway()
 	{
-		switch (base.attackIndex)
+		switch (attackIndex)
 		{
-		case 0:
-		case 1:
-			player.bob.Sway(new Vector4(0f, Mathf.Lerp(10f, 30f, holding) * (float)((base.attackIndex == 0) ? 1 : (-1)), 0f, 5f));
-			break;
-		case 2:
-			player.bob.Sway(new Vector4(Mathf.Lerp(10f, 30f, holding), 0f, 0f, 5f));
-			break;
-		case 3:
-			player.bob.Sway(new Vector4(10f, 0f, 0f, 5f));
-			break;
-		case 4:
-			player.bob.Sway(new Vector4(0f, 0f, 5f, 4f));
-			break;
+			//left right strike
+			case 0:
+			case 1:
+				player.bob.Sway(new Vector4(0f, Mathf.Lerp(10f, 30f, holding) * (float)((attackIndex == 0) ? 1 : (-1)), 0f, 5f));
+				break;
+			//slam
+			case 2:
+				player.bob.Sway(new Vector4(Mathf.Lerp(10f, 30f, holding), 0f, 0f, 5f));
+				break;
+			//throw
+			case 3:
+				player.bob.Sway(new Vector4(10f, 0f, 0f, 5f));
+				break;
+			//block
+			case 4:
+				player.bob.Sway(new Vector4(0f, 0f, 5f, 4f));
+				break;
 		}
 	}
 
-
-	public bool SlashCheck(Vector3 slashBoxSize)
+	//Checks if an attack lands on a Damagable layer.
+	//damages colliders entered.
+	public void SlashCheck(Vector3 slashBoxSize)
 	{
-		bool result = false;
-		Physics.OverlapBoxNonAlloc(player.tHead.position + player.tHead.forward * slashBoxSize.z / 2f, slashBoxSize, colliders, player.tHead.rotation, 17408);
+		Physics.OverlapBoxNonAlloc(player.tHead.position + player.tHead.forward * slashBoxSize.z / 2f, slashBoxSize, colliders, player.tHead.rotation, layerMask);
 		for (int i = 0; i < colliders.Length; i++)
 		{
 			if (colliders[i] != null)
 			{
 				colliders[i].GetComponent<Damagable>().Damage(damage);
 				colliders[i] = null;
-				result = true;
-							
 			}
 		}
-		return result;
 	}
 
+	//Passes Damage information down to targets, depending on attack types.
 	public void Strike()
 	{
-		switch (base.attackIndex)
+		switch (attackIndex)
 		{
-		case 0:
-		case 1:
-			damage.dir = ((player.tHead.forward + player.tHead.right * ((base.attackIndex == 0) ? 1 : (-1))) / 2f).normalized;
-			damage.amount = slashDamageCurve.Evaluate(holding);
-			if(!SlashCheck(new Vector3(2f, 0.5f, 2.5f)))
+			//left right slash
+			case 0:
+			case 1:
+				damage.dir = ((player.tHead.forward + player.tHead.right * ((attackIndex == 0) ? 1 : (-1))) / 2f).normalized;
+				damage.amount = slashDamageCurve.Evaluate(holding);
+				Debug.Log(damage.amount);
+				SlashCheck(new Vector3(2f, 0.5f, 2.5f));
+				rightSlash = !rightSlash;
+				break;
+			//downward
+			case 2:
 			{
-				Vector3 forward = player.tHead.forward;
-				forward = Quaternion.AngleAxis(40f, player.tHead.up) * forward;
-				for (int i = 0; i < 3; i++)
-				{
-					Debug.DrawRay(player.tHead.position, forward * 3f, Color.red, 2f);
-					RaycastHit hitInfo;
-					if (Physics.Raycast(player.tHead.position, forward, out hitInfo, 2.5f, 1))
-					{
-						break;
-					}
-					forward = Quaternion.AngleAxis(-40f, player.tHead.up) * forward;
-				}
+				damage.dir = ((player.tHead.forward + player.tHead.up / 2f) / 2f).normalized;
+				damage.amount = slamSlashDamageCurve.Evaluate(holding);
+				SlashCheck(new Vector3(0.5f, 2f, 3f));
+				break;
 			}
-			rightSlash = !rightSlash;
-			if (rightSlash)
-			{
-				rightSlashTimer = 1f;
-			}
-			break;
-		case 2:
-		{
-			damage.dir = ((player.tHead.forward + player.tHead.up / 2f) / 2f).normalized;
-			damage.amount = slamSlashDamageCurve.Evaluate(holding);
-			bool flag = SlashCheck(new Vector3(0.5f, 2f, 3f));
-			 break;
+			//throw
+			case 3:
+				Weapon drop = GameObject.Instantiate(manager.weaponDrops[manager.currentWeapon], player.tHead.position - player.tHead.forward*1f, Quaternion.LookRotation(player.tHead.right)).GetComponent<Weapon>();
+				float dropDistance = Mathf.Lerp(5f, 15f, holding);
+				drop.Drop(player.tHead.forward * dropDistance, -90f);
+				objWeapon.SetActive(false);
+				break;
 		}
-		case 3:
-			 Weapon drop = GameObject.Instantiate(manager.weaponDrops[manager.currentWeapon], player.tHead.position - player.tHead.forward*1f, Quaternion.LookRotation(player.tHead.right)).GetComponent<Weapon>();
-			float dropDistance = Mathf.Lerp(5f, 15f, holding);
-			drop.Drop(player.tHead.forward * dropDistance, -90f);
-			objWeapon.SetActive(false);
-			 break;
-		}
+
 		holding = 0f;
-		base.attackState = 0;
-		base.attackIndex = -1;
-		base.animator.SetInteger("Attack Index", base.attackIndex);
+		attackState = 0;
+		attackIndex = -1;
+		animator.SetInteger("Attack Index", attackIndex);
 	}
 
 	public void Drop()
@@ -168,11 +146,12 @@ public class SwordController : WeaponController
 		manager.Pick(-1);
 	}
 
+	//Drops current weapon on ground is block succeeds.
 	public override void Block()
 	{
-		if (base.attackIndex == 4)
+		if (attackIndex == 4)
 		{
-			base.animator.SetTrigger("Damage");
+			animator.SetTrigger("Damage");
 			if (holding >= 0.5f)
 			{	
 				TimeManager.instance.SlowMotion(0.1f, 0.3f, 0.2f);
@@ -181,161 +160,159 @@ public class SwordController : WeaponController
 				manager.Pick(-1);		
 			}
 			//CameraController.shake.Shake(2);
-			base.isBlocking = false;
-			base.attackIndex = -1;
-			base.attackState = 0;
-			base.animator.SetInteger("Attack Index", base.attackIndex);
+			isBlocking = false;
+			attackIndex = -1;
+			attackState = 0;
+			animator.SetInteger("Attack Index", attackIndex);
 			holding = 0f;
 		}
 	}
 
+	//Releases players charge attack when lands on ground.
 	private void Ground()
 	{
-		if (base.animator.GetInteger("Attack Index") == 2)
+		if (animator.GetInteger("Attack Index") == 2)
 		{
-			base.animator.SetTrigger("Release");
+			animator.SetTrigger("Release");
 			cooldown = 0.1f;
 		}
 	}
 
-	private void ChargeAttackWithIndex(int i, float newHolding = 0f)
+	//Sets up an attack of given type.
+	private void ChargeAttackWithIndex(int i, float time = 0f)
 	{
-		base.attackIndex = i;
-		base.animator.SetInteger("Attack Index", base.attackIndex);
-		base.animator.SetTrigger("Charge");
-		holding = newHolding;
+		attackIndex = i;
+		animator.SetInteger("Attack Index", attackIndex);
+		animator.SetTrigger("Charge");
+		holding = time;
 	}
 
-	public override void Tick()
+	//receives attack inputs, and triggers corresponding attacks, depending on the attack state.
+	public override void WeaponInputeUpdate()
 	{
 		if (cooldown > 0f)
 		{
 			cooldown -= Time.deltaTime;
 			return;
 		}
-		base.isBlocking = base.attackIndex == 4 && base.attackState != 0;
-		switch (base.attackState)
+		isBlocking = attackIndex == 4 && attackState != 0;
+
+		switch (attackState)
 		{
-		case 0:
-			if (!objWeapon.activeInHierarchy)
-			{
-				break;
-			}
-            
-			if (Input.GetKey(KeyCode.Mouse0) && Input.GetKey(KeyCode.Mouse1))
-			{
-                player.bob.Sway(new Vector4(0f, 0f, 5f, 3f));
-				ChargeAttackWithIndex(4);
-				base.attackState = 1;
-			}
-			else if (Input.GetKeyDown(KeyCode.Mouse0))
-			{
-				if (player.grounder.grounded)
-				{
-					ChargeAttackWithIndex(rightSlash ? 1 : 0);
-				}
-				else
-				{
-					ChargeAttackWithIndex(2);
-				}
-				base.attackState = 1;
-			}
-			else if (Input.GetKeyDown(KeyCode.Mouse1))
-			{
-				ChargeAttackWithIndex(3);
-				base.attackState = 1;
-			}
-			else if (rightSlashTimer > 0f)
-			{
-				rightSlashTimer -= Time.deltaTime;
-			}
-			else if (rightSlash)
-			{
-				rightSlash = false;
-			}
-			break;
-		case 1:
-			switch (base.attackIndex)
-			{
-
-            //slashing
+			//if not attacking.
 			case 0:
-			case 1:
-				if (Input.GetKeyDown(KeyCode.Mouse1))
+				if (!objWeapon.activeInHierarchy)
 				{
-					ChargeAttackWithIndex(4);
+					break;
+				}
+				
+				if (Input.GetKey(KeyCode.Mouse0) && Input.GetKey(KeyCode.Mouse1))
+				{
 					player.bob.Sway(new Vector4(0f, 0f, 5f, 3f));
-					//Game.soundsManager.PlayClip(sfxSwitchA);
+					ChargeAttackWithIndex(4);
+					attackState = 1;
 				}
-				if (Input.GetKeyDown(KeyCode.Space))
+				else if (Input.GetKeyDown(KeyCode.Mouse0))
 				{
-					//Game.soundsManager.PlayClip(sfxSwitchB);
-					ChargeAttackWithIndex(2);
-				}
-				if (!Input.GetKey(KeyCode.Mouse0) && holding > 0.25f)
-				{
-					base.animator.SetTrigger("Release");
-					base.attackState++;
-				}
-				holding = Mathf.MoveTowards(holding, 1f, Time.deltaTime * 1.5f);
-				break;
-
-            //aiming
-			case 3:
-
-				if (Input.GetKeyUp(KeyCode.Mouse1))
-				{
-                    base.attackState = 0;
-					base.attackIndex = -1;
-					base.animator.SetInteger("Attack Index", base.attackIndex);
-					base.animator.SetTrigger("Cancel");
-				}
-
-				if (Input.GetKeyDown(KeyCode.Mouse0)) // && holding >= 0.75f)
-				{
-					base.animator.SetTrigger("Release");
-					base.attackState++;
-				}
-				holding = Mathf.MoveTowards(holding, 1f, Time.deltaTime * 2.5f);
-				break;
-
-            //air attacking
-			case 2:
-				if (Input.GetKey(KeyCode.Mouse0))
-				{
-					player.extraUpForce = true;
-				}
-				if (Input.GetKeyDown(KeyCode.Mouse1))
-				{
-					ChargeAttackWithIndex(3, holding);
-					if (base.attackIndex == 3)
+					if (player.grounder.grounded)
 					{
+						ChargeAttackWithIndex(rightSlash ? 1 : 0);
+					}
+					else
+					{
+						ChargeAttackWithIndex(2);
+					}
+					attackState = 1;
+				}
+				else if (Input.GetKeyDown(KeyCode.Mouse1))
+				{
+					ChargeAttackWithIndex(3);
+					attackState = 1;
+				}
+				break;
+
+			//if is charging or attacking. 
+			case 1:
+				switch (attackIndex)
+				{
+
+				//slashing
+				case 0:
+				case 1:
+					if (Input.GetKeyDown(KeyCode.Mouse1))
+					{
+						ChargeAttackWithIndex(4);
 						player.bob.Sway(new Vector4(0f, 0f, 5f, 3f));
 					}
-				}
-				if (Input.GetKeyUp(KeyCode.Mouse0))
-				{
-					player.rb.AddForce(Vector3.down * 10f, ForceMode.Impulse);
-					base.animator.SetTrigger("Cancel");
-				}
-				holding = Mathf.MoveTowards(holding, 1f, Time.deltaTime);
-				break;
+					if (Input.GetKeyDown(KeyCode.Space))
+					{
+						ChargeAttackWithIndex(2);
+					}
+					if (!Input.GetKey(KeyCode.Mouse0) && holding > 0.25f)
+					{
+						animator.SetTrigger("Release");
+						attackState++;
+					}
+					holding = Mathf.MoveTowards(holding, 1f, Time.deltaTime * 1.5f);
+					break;
 
-			case 4:
-				holding = Mathf.MoveTowards(holding, 1f, Time.deltaTime * 2.5f);
-				if (!Input.GetKey(KeyCode.Mouse1) && holding > 0.5f)
-				{
-					base.animator.SetTrigger("Cancel");
-					base.attackIndex = -1;
-					base.animator.SetInteger("Attack Index", base.attackIndex);
-					holding = 0f;
-					base.attackState = 0;
+				//downward slash
+				case 2:
+					if (Input.GetKey(KeyCode.Mouse0))
+					{
+						player.extraUpForce = true;
+					}
+					if (Input.GetKeyDown(KeyCode.Mouse1))
+					{
+						ChargeAttackWithIndex(3, holding);
+						if (attackIndex == 3)
+						{
+							player.bob.Sway(new Vector4(0f, 0f, 5f, 3f));
+						}
+					}
+					if (Input.GetKeyUp(KeyCode.Mouse0))
+					{
+						player.rb.AddForce(Vector3.down * 10f, ForceMode.Impulse);
+						animator.SetTrigger("Cancel");
+					}
+					holding = Mathf.MoveTowards(holding, 1f, Time.deltaTime);
+					break;
+
+				//aiming
+				case 3:
+
+					if (Input.GetKeyUp(KeyCode.Mouse1))
+					{
+						attackState = 0;
+						attackIndex = -1;
+						animator.SetInteger("Attack Index", attackIndex);
+						animator.SetTrigger("Cancel");
+					}
+
+					if (Input.GetKeyDown(KeyCode.Mouse0))
+					{
+						animator.SetTrigger("Release");
+						attackState++;
+					}
+					holding = Mathf.MoveTowards(holding, 1f, Time.deltaTime * 2.5f);
+					break;
+				//blocking
+				case 4:
+					holding = Mathf.MoveTowards(holding, 1f, Time.deltaTime * 2.5f);
+					if (!Input.GetKey(KeyCode.Mouse1) && holding > 0.5f)
+					{
+						animator.SetTrigger("Cancel");
+						attackIndex = -1;
+						animator.SetInteger("Attack Index", attackIndex);
+						holding = 0f;
+						attackState = 0;
+					}
+					break;
 				}
 				break;
-			}
-			break;
-		case 2:
-			break;
+			//finishes an attack
+			case 2:
+				break;
 		}
 	}
 }

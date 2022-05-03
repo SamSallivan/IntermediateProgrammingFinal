@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+//indication arrow that appears on top of targeted weapons that can be picked up
 public class WeaponIndicator : MonoBehaviour
 {
 	public Transform tMesh;
@@ -9,8 +10,6 @@ public class WeaponIndicator : MonoBehaviour
     {
 		tMesh = transform.GetChild(0);
     }
-
-    // Update is called once per frame
     void Update()
     {   
         if((bool)tMesh){

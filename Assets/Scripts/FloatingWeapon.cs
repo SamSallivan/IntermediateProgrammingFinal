@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+//weapon that is floating in level, waiting to be picked up
 public class FloatingWeapon : Weapon
 {
 	public Transform tMesh;
@@ -23,12 +24,11 @@ public class FloatingWeapon : Weapon
 
 	public override void Slap(Vector3 dir)
 	{
-
+		//Cannot be slapped
 	}
 
 	public override void Interact(WeaponManager manager)
 	{
 		base.Interact(manager);
-		//QuickEffectsPool.Get("WeaponPick", base.t.position + PlayerController.instance.tHead.forward * 2f, PlayerController.instance.tHead.rotation).Play();
 	}
 }

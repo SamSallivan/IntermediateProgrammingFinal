@@ -2,6 +2,8 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+//Used when enemy enters ragdoll state, with its main collider turned off
+//acts as its secondary collider to detect damage and slap.
 public class RagdollCollider : MonoBehaviour, Damagable, Slappable
 {
 	public EnemyMove enemy { get; private set; }

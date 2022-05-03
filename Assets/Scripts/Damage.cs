@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+//Class that stores information of an Attack, passed down from an Attacker to its Victim.
 public class Damage
 {
 

@@ -3,6 +3,9 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
 
+//added attack, reaction to slap and damage.
+//entering ragdoll state, and getting up and leaving it
+
 public class EnemyMove : MonoBehaviour, Slappable, Damagable
 {
     public NavMeshAgent agent;
@@ -16,11 +19,10 @@ public class EnemyMove : MonoBehaviour, Slappable, Damagable
     public Vector3 targetPos;
     public GameObject targetObj;
 	public float health;
-	public float maxHealth = 100f;
-	public float kickMinDamage = 60f;
+	public float minDollDamage = 60f;
     public bool dead; 
     public bool targeted; //Whether it has targeted a proper location.
-    public bool doll; //Whether it has targeted a proper location.
+    public bool doll; //whether enemy is in ragdoll state
 
     public float coolDown = 10; 
     public float dollTimer = 5f; 
@@ -50,6 +52,7 @@ public class EnemyMove : MonoBehaviour, Slappable, Damagable
         coolDown = 2f;
     }
 
+    //turns red when attacked
     public void MaterialUpdate(){
         if (materialTimer > 0){
             materialTimer = Mathf.MoveTowards(materialTimer, 0, Time.deltaTime*2);
@@ -58,6 +61,8 @@ public class EnemyMove : MonoBehaviour, Slappable, Damagable
         GetComponentInChildren<Renderer>().material.SetColor("_Color", color);
     }
 
+    //adds all ragdoll rigidbodies into list for future controll.
+    //turns them off
     public void SetRigdoll()
     {
         Collider[] colliders = this .gameObject.GetComponentsInChildren<Collider>();
@@ -72,6 +77,8 @@ public class EnemyMove : MonoBehaviour, Slappable, Damagable
         }
     }
 
+    //turns own collider, rigidbody off
+    //ragdoll rigidbodies, colliders on
     public void EnableRagdoll()
     {
         coolDown = 10;
@@ -91,6 +98,9 @@ public class EnemyMove : MonoBehaviour, Slappable, Damagable
         }
     }
 
+    //turns own collider, rigidbody on
+    //ragdoll rigidbodies, colliders off
+    //restarts animator in order to play get up animation
     public void DisableRagdoll()
     {
 
@@ -103,31 +113,30 @@ public class EnemyMove : MonoBehaviour, Slappable, Damagable
             }
         }
 
-        // ragdollColliders[0].transform.localPosition = new Vector3(0, 87.62761f, 0);
-        // ragdollColliders[0].transform.localRotation = Quaternion.Euler(0, -90, -81.407f);
-        
         GetComponent<CapsuleCollider>().enabled = true;
         GetComponent<Rigidbody>().isKinematic = true;
         animator.enabled = true; 
         animator.Rebind();
         animator.Update(0f);
-        //animator.SetTrigger("GetUp");
-        //GetComponent<NavMeshAgent>().enabled = true;
         
         coolDown = 10f;
         doll = false;
 
     }
 
+    //keeps setting the angles to the desired direction,
+    //in order to override any undesired collision during the getting up animation
     public void GetUpUpdate(){
         transform.eulerAngles = new Vector3(0, transform.eulerAngles.y, 0);
     }
+
     public void GetUp(){
         GetComponent<NavMeshAgent>().enabled = true;
         coolDown = 0.5f;
     }
 
-
+    //checks if the ground beneath around has navMesh baked.
+    //if so return the nearest position in range
 	public Vector3 GetNavMeshPosition(Vector3 pos, float radius = 1f)
 	{
         NavMeshHit navHit; 
@@ -140,15 +149,9 @@ public class EnemyMove : MonoBehaviour, Slappable, Damagable
 
     private void Update()
     {
-        //Look for player in its spherical range.
-
-        // RaycastHit check;
-        // var rayDirection = player.transform.position - transform.position;
-        // if (Physics.Raycast(transform.position, rayDirection, out check)) {
-        //     if (check.transform == player) {
-        //     }
-        // }
-
+        if(health <= 0){
+            dead = true;
+        }
         playerInSight = Physics.CheckSphere(transform.position, sightRange, playerMask);
         playerInRange = Physics.CheckSphere(transform.position, attackRange, playerMask);
 
@@ -165,15 +168,16 @@ public class EnemyMove : MonoBehaviour, Slappable, Damagable
             else if (!playerInSight) Wandering();
         }
         
+        //recovers from doll state in 1 second
 		if (dollTimer < 1)
 		{
 			dollTimer += Time.deltaTime;
 		}
 		else if (doll && !dead)
-		{
-
+		{   
+            //gets the nearest point underneath that is walkable for AI.
+            //if none, moves the doll forward and try again
             RaycastHit hit;
-            //Physics.Raycast(ragdollColliders[0].attachedRigidbody.position, Vector3.down, out hit, 2f, 1);
             Physics.Raycast(transform.position, Vector3.down, out hit, 2f, 1);
             if (hit.distance != 0f)
             {
@@ -215,9 +219,10 @@ public class EnemyMove : MonoBehaviour, Slappable, Damagable
         Vector3 tempDir;
         RaycastHit hit;
 
-		bool flag = false;
 		float num = 12f;
         EnableRagdoll();
+
+        //sets different reaction if in or not in doll state
 		if (!doll)
 		{
 			tempDir = Vector3.ProjectOnPlane(dir, PlayerController.instance.grounder.groundNormal);
@@ -226,6 +231,7 @@ public class EnemyMove : MonoBehaviour, Slappable, Damagable
 		{
 			tempDir = Quaternion.AngleAxis(5f, PlayerController.instance.tHead.right) * dir;
 		}
+        //abort if obstacles below 
 		for (int i = 0; i < 3; i++)
 		{
 			Physics.Raycast(ragdollColliders[0].attachedRigidbody.position, tempDir, out hit, num, 148481);
@@ -233,50 +239,31 @@ public class EnemyMove : MonoBehaviour, Slappable, Damagable
 			{
 				if (hit.collider.gameObject.layer != 0)
 				{
-					flag = true;
-					//Debug.DrawLine(rb.position, hit.point, Color.green, 2f);
 					break;
 				}
-				//Debug.DrawLine(rbs[0].position, hit.point, Color.red, 2f);
 			}
 			tempDir = Quaternion.AngleAxis(-10f, PlayerController.instance.tHead.right) * tempDir;
 			num -= 2f;
 		}
-		//StopStun();
-		bool flag2 = Physics.Raycast(ragdollColliders[0].attachedRigidbody.position, Vector3.down, 1f, 1);
 
         for (int j = 0; j < ragdollColliders.Count; j++)
         {
-            //ragdollColliders[j].attachedRigidbody.velocity = tempDir.normalized * ((j == 0) ? (flag ? 18 : 3) : (flag ? 12 : 6));
             ragdollColliders[j].attachedRigidbody.velocity = tempDir.normalized * ((j == 0) ? 2 : 4);
         }
         ragdollColliders[0].attachedRigidbody.AddForce(Vector3.up * (0), ForceMode.Impulse);
-        // if (lifetime > 0f)
-        // {
-        //     RotateBody(0f, Mathf.Sin(Time.timeSinceLevelLoad) * 60f, 0f);
-        // }
-		// Game.soundsManager.PlayClipAtPosition(kickSounds[UnityEngine.Random.Range(0, kickSounds.Length)], 1f, rb.position);
-		// if (!enemy.dead)
-		// {
-		// 	PlaySound(enemy.sfxDamage);
-		// }
 	}
+
 	public virtual void Damage(Damage damage)
 	{
-        Debug.Log(damage.amount);
-
+        //turns red
         materialTimer = 1;
         Vector3 dir = damage.dir;
         dir.Normalize();
 
+        //if dead, still reacts
 		if (dead)
 		{
             if(doll){
-                // ragdollColliders[0].GetComponent<Rigidbody>().AddForce(Vector3.up * 30f, ForceMode.Impulse);
-				// for (int j = 0; j < ragdollColliders.Count; j++)
-				// {
-				// 	ragdollColliders[j].GetComponent<Rigidbody>().velocity += dir * 9;
-				// }
 
 				for (int j = 0; j < ragdollColliders.Count; j++)
 				{
@@ -290,16 +277,14 @@ public class EnemyMove : MonoBehaviour, Slappable, Damagable
 			return;
 		}
 
-
-        if (damage.amount < kickMinDamage)
-			{
-				//DamageEffects Animations
-
-				health -= damage.amount;
-				// PlaySound(sfxDamage);
-				// QuickEffectsPool.Get("Damage", t.position + Vector3.up * 1.5f, Quaternion.LookRotation(damage.dir)).Play();
+        //if damage smaller than minial required to enter doll, only deducts health
+        if (damage.amount < minDollDamage)
+		{
+            health -= damage.amount;
         }
         else{
+        //or enters doll state
+        //physically react
 
             if (doll){
             
@@ -334,6 +319,7 @@ public class EnemyMove : MonoBehaviour, Slappable, Damagable
             }
             else
             {
+            //dies if health goes below 0, bounces up
                 health -= damage.amount;
                 Die();
                 dead = true;
@@ -342,15 +328,14 @@ public class EnemyMove : MonoBehaviour, Slappable, Damagable
         }
 	}
 
+    //disables main collider on death
+    //leaving ragdoll colliders
 	private void Die()
 	{
-		// PlaySound(enemy.sfxDead);
-		// mat.SetFloatByName("_Power", 0f);
-		// DropSomething();
-		// DropDead();
 		GetComponent<CapsuleCollider>().enabled = false;
 	}
 
+    //resets animation and agent destination on cooldown
     public void CoolDown()
     {
         if(GetComponent<Animator>().enabled)
@@ -405,7 +390,6 @@ public class EnemyMove : MonoBehaviour, Slappable, Damagable
     public void Chasing()
     {
         //Moves towards the player.
-        //agent.enabled = true;
         var lookPos = player.transform.position - transform.position;
         lookPos.y = 0;
         var rotation = Quaternion.LookRotation(lookPos);
@@ -417,6 +401,7 @@ public class EnemyMove : MonoBehaviour, Slappable, Damagable
         }
     }
     
+    //plays attack animation
     public void Attacking()
     {        
         if(agent.isActiveAndEnabled)
@@ -426,6 +411,7 @@ public class EnemyMove : MonoBehaviour, Slappable, Damagable
         coolDown = 10;
     }
 
+    //finds player or props and apply damage 
     void Srike()
     {		
         var targetDir = (player.transform.position - transform.position).normalized;
@@ -452,15 +438,6 @@ public class EnemyMove : MonoBehaviour, Slappable, Damagable
                         attackTarget.Damage(damage);
                     }
                 }
-                // else if (friendlyFire)
-                // {
-                //     friendlyDamageInfo.dir = (t.forward * ((t.InverseTransformPoint(colliders[i].transform.position).z > 0f) ? 1 : (-1)) + t.up) / 2f;
-                //     friendlyDamageInfo.amount = 10f;
-                //     friendlyDamageInfo.knockdown = true;
-                //     friendlyDamageInfo.type = DamageInfo.DamageType.FriendlyFire;
-                //     colliders[i].GetComponent<IDamageable<DamageInfo>>().Damage(friendlyDamageInfo);
-                //     StylePointsCounter.instance.AddStylePoint(StylePointTypes.FriendlyFire);
-                // }
                 colliders[i] = null;
             }
 		}

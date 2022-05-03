@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+//enables player to dash and grab targeted weapon
 public class PlayerDash : MonoBehaviour
 {
     public GameObject target;
@@ -44,18 +45,15 @@ public class PlayerDash : MonoBehaviour
 	}
 
     public void Update(){
-
-		if (!PlayerController.instance)
-		{
-			return;
-		}
+		
 		maxDist = 9f;
-		float num = 30f;
-		float num2 = 0f;
+		float leastAngle = 30f;
+		float weaponAngle = 0f;
 		int index = -1;
 
         Weapon[] allWeapons = FindObjectsOfType<Weapon>();
 
+		//gets weapon most within range and angle
 		for (int i = 0; i < allWeapons.Length; i++)
 		{
 			if (!allWeapons[i].isActiveAndEnabled)
@@ -69,20 +67,20 @@ public class PlayerDash : MonoBehaviour
 			}
 			bool grounded = PlayerController.instance.grounder.grounded;
             Vector3 playerPos =  PlayerController.instance.tHead.position;
-			Vector3 to = (allWeapons[i].t.position - playerPos).normalized;
-			num2 = Vector3.Angle(PlayerController.instance.tHead.forward, to);
-			if (num2 < num)
+			Vector3 weaponDir = (allWeapons[i].t.position - playerPos).normalized;
+			weaponAngle = Vector3.Angle(PlayerController.instance.tHead.forward, weaponDir);
+			if (weaponAngle < leastAngle)
 			{
-				num = num2;
+				leastAngle = weaponAngle;
 				if (index != i)
 				{
 					index = i;
 				}
 			}
 		}
+		//enables weapon indicator arrow if targeted
 		if (index > -1)
 		{
-			Debug.DrawLine(PlayerController.instance.t.position, allWeapons[index].t.position, Color.cyan);
             targetWeapon = allWeapons[index];
 
 			if((bool)targetWeapon.GetComponent<FloatingWeapon>()){
@@ -107,6 +105,10 @@ public class PlayerDash : MonoBehaviour
 		{
 			return false;
 		}
+
+		//checks if weapon is far from ground
+		//allows player to get to exact weapon position if player is in air
+		//or dashes player to beneath the weapon
 		if (!isDashing && state == 0)
 		{
 			Physics.Raycast(targetWeapon.t.position, Vector3.down, out hit, (player.grounder.grounded) ? 10 : 1, 1);
@@ -126,46 +128,50 @@ public class PlayerDash : MonoBehaviour
 		return false;
 	}
 
+	//dashes player to targeted weapon
 	public void DashingUpdate()
 	{
 		switch (state)
 		{
-		case 3:
-			if (player.grounder.grounded)
-			{
-				player.grounder.Unground();
-			}
-			player.weapons.Drop(Vector3.up + player.tHead.forward);
-			player.rb.isKinematic = true;
-			startPos = player.rb.position;
-			dir = (targetPos - startPos).normalized;
-			speed = Mathf.Abs((8f - Vector3.Distance(player.t.position, targetPos) / 2f));
-			speed = Mathf.Clamp(speed, 2f, 8f);
-			player.headPosition.Slide(0f);
-			//player.fov.kinematicFOV = 15f;
-			player.bob.Sway(startSway);
-			timer = 0f;
-			state--;
-			break;
-		case 2:
-			timer = Mathf.MoveTowards(timer, 1f, Time.deltaTime * speed);
-			player.t.position = Vector3.Lerp(startPos, targetPos, timer - 0.2f);
-			player.bob.Angle(0f);
-			if (timer == 1f)
-			{
+			//throw current weapon
+			//locks target, calculates speed, dir
+			case 3:
+				if (player.grounder.grounded)
+				{
+					player.grounder.Unground();
+				}
+				player.weapons.Drop(Vector3.up + player.tHead.forward);
+				player.rb.isKinematic = true;
+				startPos = player.rb.position;
+				dir = (targetPos - startPos).normalized;
+				speed = Mathf.Abs((8f - Vector3.Distance(player.t.position, targetPos) / 2f));
+				speed = Mathf.Clamp(speed, 2f, 8f);
+				player.headPosition.Slide(0f);
+				player.bob.Sway(startSway);
+				timer = 0f;
 				state--;
-			}
-			break;
-		case 1:
-			player.rb.isKinematic = false;
-			player.rb.AddForce(dir * 20f, ForceMode.Impulse);
-			player.airControl = 1;
-			player.airControlBlockTimer = 0.2f;
-			player.headPosition.Slide(0.75f);
-			targetWeapon.Interact(player.weapons);
-			isDashing = false;
-			state--;
-			break;
+				break;
+			//move towards weapon
+			case 2:
+				timer = Mathf.MoveTowards(timer, 1f, Time.deltaTime * speed);
+				player.t.position = Vector3.Lerp(startPos, targetPos, timer - 0.2f);
+				player.bob.Angle(0f);
+				if (timer == 1f)
+				{
+					state--;
+				}
+				break;
+			//equips targeted weapon
+			case 1:
+				player.rb.isKinematic = false;
+				player.rb.AddForce(dir * 20f, ForceMode.Impulse);
+				player.airControl = 1;
+				player.airControlBlockTimer = 0.2f;
+				player.headPosition.Slide(0.75f);
+				targetWeapon.Interact(player.weapons);
+				isDashing = false;
+				state--;
+				break;
 		}
 	}
 }

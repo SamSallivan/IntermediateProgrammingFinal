@@ -2,11 +2,13 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+//weapon that is dropped or thrown
 public class ThrowedWeapon : Weapon
 {
-
     public Damage damage = new Damage();
 
+	//can be slapped
+	//looks for close enemy and flies towards it
     public void Slap(Vector3 dir){
 
         base.Slap(dir);
@@ -49,6 +51,7 @@ public class ThrowedWeapon : Weapon
 		}
     }
 
+	//deals damage on collision
 	private void OnCollisionEnter(Collision c)
 	{
 		if (c.gameObject.layer == 10 || c.gameObject.layer == 14 )

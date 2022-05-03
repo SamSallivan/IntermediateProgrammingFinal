@@ -4,6 +4,8 @@ using UnityEngine.SceneManagement;
 using UnityEngine;
 using UnityEngine.Rendering.PostProcessing;
 
+//Enabled when player dies
+//Controlls the game restart function
 public class PlayerDecapitate : MonoBehaviour
 {
 	private PlayerController player;
@@ -20,6 +22,7 @@ public class PlayerDecapitate : MonoBehaviour
 		player = GetComponentInParent<PlayerController>();
 	}
 
+	//restarts game on input
     void Update()
     {
         if(Input.GetKey(KeyCode.R)){
@@ -28,6 +31,7 @@ public class PlayerDecapitate : MonoBehaviour
         }
     }
 
+	//separates the camera from player transform
     public void Decapitate(Transform pos, Vector3 dir){
         if ((bool)transform.parent)
 		{
@@ -36,18 +40,5 @@ public class PlayerDecapitate : MonoBehaviour
 		transform.SetPositionAndRotation(pos.position, pos.rotation);
 		rb.AddForce(dir * 5f, ForceMode.Impulse);
 		rb.AddTorque(Vector3.one * 10f, ForceMode.Impulse);
-
-		// PostProcessVolume volume = FindObjectOfType<PostProcessVolume>();
-		// Bloom bloom;
-		// ChromaticAberration ca;
-		// ColorGrading cg;
-
-		// volume.profile.TryGetSettings(out bloom);
-		// volume.profile.TryGetSettings(out ca);
-		// volume.profile.TryGetSettings(out cg);
-
-		// bloom.intensity.value = 10;
-		// ca.intensity.value = 1;
-		// cg.mixerGreenOutRedIn.value = -150;
     }
 }

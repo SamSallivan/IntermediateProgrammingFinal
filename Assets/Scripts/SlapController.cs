@@ -6,23 +6,13 @@ public class SlapController : MonoBehaviour
 {
 	public Damage damage = new Damage();
 
-	public AudioClip chargeSound;
-
-	public AudioClip kickSound;
-
-	public AudioClip hitSound;
-
-	public AudioClip sfxMidAirHit;
-
-	public AudioClip sfxWallKickJump;
-
 	public Animator animator;
 
 	public PlayerController player;
 
 	public WeaponManager manager;
 	
-	public LayerMask slapMask = 58368;
+	public LayerMask slapMask;
 
 	public float minDistance;
 
@@ -45,30 +35,6 @@ public class SlapController : MonoBehaviour
 		animator = GetComponent<Animator>();
 		player = GetComponentInParent<PlayerController>();
 		manager = GetComponentInParent<WeaponManager>();
-		Grounder grounder = player.grounder;
-	}
-
-	private void OnDestroy()
-	{
-		Grounder grounder = player.grounder;
-		grounder.OnUnground -= Ungrounded;
-		grounder.OnGround -= Grounded;
-	}
-
-	private void Grounded()
-	{
-		if (isCharging)
-		{
-			animator.SetTrigger("Charge");
-		}
-	}
-
-	private void Ungrounded()
-	{
-		if (isCharging)
-		{
-			animator.SetTrigger("Charge");
-		}
 	}
 
 	private void OnEnable()
@@ -87,20 +53,14 @@ public class SlapController : MonoBehaviour
 	{
 		player.bob.Sway(new Vector4(0f, -10f, 0f, 3f));
 	}
-
-	private void OnDrawGizmos()
-	{
-		if ((bool)player)
-		{
-			Gizmos.matrix = player.tHead.localToWorldMatrix;
-			Gizmos.DrawWireCube(new Vector3(0f, 0f, 1.25f), new Vector3(1.4f, 2.5f, 2.5f));
-		}
-	}
+	
 
 	public void Strike()
 	{
 		targetCollider = null;
-		minDistance = float.PositiveInfinity;
+		minDistance = 100;
+
+		//gives a larger hitbox when in air, for easier control
 		if (player.grounder.grounded && player.slide.slideState == 0)
 		{
 			Physics.OverlapBoxNonAlloc(player.tHead.position + player.tHead.forward * 1.25f, new Vector3(0.7f, 1.25f, 1.25f), colliders, player.tHead.rotation, slapMask);
@@ -109,6 +69,8 @@ public class SlapController : MonoBehaviour
 		{
 			Physics.OverlapCapsuleNonAlloc(player.tHead.position, player.tHead.position + player.tHead.forward * 3.5f, 1f, colliders, slapMask);
 		}
+
+		//gets the closest one target only
 		for (int i = 0; i < colliders.Length; i++)
 		{
 			if (colliders[i] != null)
@@ -122,17 +84,17 @@ public class SlapController : MonoBehaviour
 				colliders[i] = null;
 			}
 		}
+
+		//if no obstacles between
 		if ((bool)targetCollider && !Physics.Linecast(player.tHead.position, targetCollider.ClosestPoint(player.tHead.position), 1))
 		{
 			Vector3 vector = targetCollider.ClosestPoint(player.tHead.position);
+
+			//boost player up if player in air
 			if (!player.grounder.grounded)
 			{
-				// if (player.tHead.forward.y > 0f - minKickJumpDot)
-				// {
-					player.rb.position = Vector3.Lerp(player.rb.position, vector, 0.75f);
-					player.rb.velocity = Vector3.zero;
-				// }
-				//player.rb.AddForce((Vector3.up - player.tHead.forward/ 4f).normalized * 20f, ForceMode.Impulse);
+				player.rb.position = Vector3.Lerp(player.rb.position, vector, 0.75f);
+				player.rb.velocity = Vector3.zero;
 				player.rb.AddForce((Vector3.up - player.tHead.forward / 4f).normalized * 5, ForceMode.Impulse);
 				player.airControlBlockTimer = 0.25f;
 				if (targetCollider.gameObject.layer == 10 && targetCollider.attachedRigidbody.isKinematic)
@@ -150,10 +112,6 @@ public class SlapController : MonoBehaviour
 					damage.amount = 25;
 					damage.dir = Vector3.zero;
 					targetCollider.GetComponent<Damagable>().Damage(damage);
-								
-					// player.slamVFX.transform.position = targetCollider.transform.position;
-					// player.slamVFX.transform.rotation = Quaternion.LookRotation(targetCollider.transform.forward);
-					// player.slamVFX.GetComponent<ParticleSystem>().Play();
 				}
 				else
 				{
@@ -169,43 +127,33 @@ public class SlapController : MonoBehaviour
 			}
 			else
 			{
-				Vector3 forward = player.tHead.forward;
-				targetCollider.GetComponent<Slappable>().Slap(forward);
+				targetCollider.GetComponent<Slappable>().Slap(player.tHead.forward);
 				damage.amount = 25;
 				damage.dir = Vector3.zero;
 				targetCollider.GetComponent<Damagable>().Damage(damage);
-				// if (player.tHead.forward.y > 0f - minKickJumpDot && player.slide.slideState != 0)
-				// {
 				if (player.slide.slideState != 0)
 				{
 					player.rb.position = Vector3.Lerp(player.rb.position, vector, 0.75f);
 					player.rb.velocity = Vector3.zero;
 				}
 								
-				// player.slamVFX.transform.position = targetCollider.transform.position;
-				// player.slamVFX.transform.rotation = Quaternion.LookRotation(targetCollider.transform.forward);
-				// player.slamVFX.GetComponent<ParticleSystem>().Play();
 			}
-			// trail.transform.SetPositionAndRotation(vector, Quaternion.LookRotation(-player.tHead.forward));
-			// trail.Play();
-			// trailParticle.Emit(10);
 			player.bob.Sway(new Vector4(10f, 0f, 0f, 5f));
-			//CameraController.shake.Shake(2);
-			if (player.slide.slideState > 0 && targetCollider.gameObject.layer == 10)
-			{
-				//StylePointsCounter.instance.AddStylePoint(StylePointTypes.SlideKick);
-			}
 		}
+		//or there is no target of given layer
 		else
 		{
 			if (!Physics.Raycast(player.tHead.position, player.tHead.forward, out hit, 2.5f, 1))
 			{
 				return;
 			}
+			//if there is wall or ground
+			//if player is sliding, boost
 			if (player.slide.slideState > 0 && hit.normal.y > 0.5f)
 			{
 				player.Jump(1.6f);
 			}
+			//or pushes player back
 			else
 			{
 				player.rb.AddForce(-player.tHead.forward * Mathf.Lerp(8f, 4f, Mathf.Abs(player.tHead.forward.y)), ForceMode.Impulse);
@@ -215,7 +163,9 @@ public class SlapController : MonoBehaviour
 		}
 	}
 
-	public void Tick()
+	//receives input on slap
+	//if no weapon equipped
+	public void SlapInputUpdate()
 	{
 		if (manager.currentWeapon == -1)
 		{
@@ -231,17 +181,15 @@ public class SlapController : MonoBehaviour
 			}
 			else if (!isCharging)
 			{
-				if (!manager.IsAttacking() && Input.GetKeyDown(KeyCode.Mouse0))
+				if (Input.GetKeyDown(KeyCode.Mouse0))
 				{
 					animator.SetTrigger("Charge");
 					isCharging = true;
 					if (player.slide.slideState > 0)
 					{
 					player.slide.Extend(1f);
-					// 	player.slide.DeactivateTrigger();
 					TimeManager.instance.SlowMotion(0.1f, 1.5f, 0.25f);
 					}
-					//Game.soundsManager.PlayClip(chargeSound);
 				}
 			}
 			else if (!Input.GetKey(KeyCode.Mouse0))
@@ -249,17 +197,13 @@ public class SlapController : MonoBehaviour
 				animator.SetTrigger("Release");
 				isCharging = false;
 				timer = 1f;
-				manager.zPos = -1f;
 				slapVFX.GetComponent<ParticleSystem>().Play();
-				//player.bob.Sway(new Vector4(0f, -20f, 0f, 3f));
 				TimeManager.instance.StopSlowmo();
-				// Game.soundsManager.PlayClip(kickSound);
 			}
 		}
 		else{
 			animator.ResetTrigger("Release");
 			animator.SetTrigger("Cancel");
-
 		}
 	}
 }

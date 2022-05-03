@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using System;
 
+//Same Script from 3D Platformer.
 public class MouseLook : MonoBehaviour
 {
 	private float sensitivity;

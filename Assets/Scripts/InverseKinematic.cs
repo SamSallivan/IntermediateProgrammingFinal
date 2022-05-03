@@ -2,64 +2,36 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-
+//The inverse kinematic that player arms use
+//Enables me to only animate the inverse kinematic target when animating,
+//and the whole arm just animates following the target.
 [ExecuteInEditMode]
 public class InverseKinematic : MonoBehaviour
 {
+	//the 3 bones of an arm, shoulder, forearm and hand
 	public Transform a;
-
 	public Transform b;
-
 	public Transform c;
 
-	[SerializeField]
-	private int sign = 1;
+	//length of an arm segment.
+	public float width = 1f;
 
-	[SerializeField]
-	private float width = 1f;
-
-	public float dist;
+	public float distance;
 
 	public float height;
 
-	private Vector3 midPoint;
+	public Vector3 midPoint;
 
-	public Vector3 kneeDir;
+	public Vector3 elbowDir;
 
-	public Vector3 kneePos;
+	public Vector3 elbowPos;
 
-    public GameObject knee;
-
+	//the target object the arm follows
 	public Transform tTarget;
-
-	public bool active;
-
-	public bool lookInB;
-
-	public bool debug;
-
-	[Range(0f, 180f)]
-	public float correctionAngle = 180f;
 
 	public void LateUpdate()
 	{
-		if (active)
-		{
-			SetTarget(tTarget);
-			if (debug)
-			{
-				Debug.DrawLine(a.position, kneePos, Color.green);
-				Debug.DrawLine(kneePos, tTarget.position, Color.green);
-				Debug.DrawLine(kneePos, midPoint, Color.magenta);
-				Debug.DrawLine(c.position, c.position - tTarget.up * 0.2f, Color.yellow);
-			}
-		}
-	}
-
-	public void Reset()
-	{
-		tTarget.localPosition = a.localPosition - a.parent.forward * width * 2f;
-		tTarget.localEulerAngles = new Vector3(180f, 0f, 0f);
+		SetTarget(tTarget);
 	}
 
 	public void Setup()
@@ -71,58 +43,42 @@ public class InverseKinematic : MonoBehaviour
 			b = componentsInChildren[1];
 			c = componentsInChildren[2];
 		}
-		if (!tTarget)
-		{
-			Transform transform = new GameObject(string.Format("{0} IK target", a.name)).transform;
-			transform.position = c.position;
-			transform.rotation = c.rotation;
-			if ((bool)a.parent)
-			{
-				transform.SetParent(a.parent);
-			}
-			tTarget = transform;
-		}
 		width = Vector3.Distance(a.position, c.position) / 2f;
-		active = true;
 	}
 
 	public void SetTarget(Transform target)
 	{
-		dist = Vector3.Distance(a.position, target.position);
+		//Gets the distance between shoulder and target.
+		distance = Vector3.Distance(a.position, target.position);
+
+		//Gets the position in middle of shoulder and target.
 		midPoint = (a.position + target.position) / 2f;
-		kneeDir = Vector3.Cross(a.position - target.position, -target.right).normalized;
-		if (dist < width * 2f)
+
+		//calculate the direction the elbow should be going.
+		elbowDir = Vector3.Cross(a.position - target.position, -target.right).normalized;
+
+		//Calculate the height of the elbow, if the arm is not straight.
+		if (distance < width * 2f)
 		{
-			height = Mathf.Sqrt(width * width - dist * dist / 4f);
+			height = Mathf.Sqrt(width * width - distance * distance / 4f);
 		}
 		else
 		{
 			height = 0f;
 		}
-		kneePos = midPoint - kneeDir * height * sign;
 
-        knee.transform.position = kneePos;
+		//calculates the elbow position.
+		elbowPos = midPoint - elbowDir * height;
 
-		a.LookAt(kneePos, kneeDir);
-		if (correctionAngle != 0f)
-		{
-			a.Rotate(correctionAngle, 0f, 0f);
-		}
-		b.LookAt(target.position, kneeDir);
-		if (correctionAngle != 0f)
-		{
-			b.Rotate(correctionAngle, 0f, 0f);
-		}
-		if ((bool)c)
-		{
-			if (!lookInB)
-			{
-				c.rotation = target.rotation;
-			}
-			else
-			{
-				c.rotation = Quaternion.Slerp(c.rotation, b.rotation, Time.deltaTime * 4f);
-			}
-		}
+		//makes upper arm point towards elbow.
+		a.LookAt(elbowPos, elbowDir);
+		a.Rotate(180, 0f, 0f);
+
+		//makes forearm point towards target.
+		b.LookAt(target.position, elbowDir);
+		b.Rotate(180, 0f, 0f);
+
+		//makes hand rotate with target.
+		c.rotation = target.rotation;
 	}
 }

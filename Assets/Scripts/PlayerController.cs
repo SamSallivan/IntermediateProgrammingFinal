@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering.PostProcessing;
 
+//Added Function Die(), Damage(),
+//And postprocessing effect when taken damage.
 public class PlayerController : MonoBehaviour, Damagable//, Slappable
 {
 	public static PlayerController instance;
@@ -116,22 +118,24 @@ public class PlayerController : MonoBehaviour, Damagable//, Slappable
 		slamVFX = Instantiate(slamVFX, Vector3.zero, Quaternion.identity);
     }
 
-
+	//Executes when taken damage from a source.
 	public void Damage(Damage damage)
 	{
 		slamVFX.transform.position = transform.position;
 		slamVFX.transform.rotation = Quaternion.LookRotation(transform.forward);
 		slamVFX.GetComponent<ParticleSystem>().Play();
+
+		//When blocking, knocks off the current weapon.
 		if (weapons.IsBlocking())
 		{
 			weapons.weapons[weapons.currentWeapon].Block();
 			rb.AddForce(damage.dir * 20f, ForceMode.Impulse);
 			bob.Sway(new Vector4(-20f, 20f, 0f, 5f));
-			//QuickEffectsPool.Get("Block", tHead.position + tHead.forward).Play();
 		}
+		//if player hasnt taken damage in 3 seconds, knocks player back and upwwards.
+		//and next attck in 3 seconds will kill player.
 		else if (damageTimer <= 0f && damage.amount < 100f)
 		{
-			weapons.DropLiftedObject();
 			if (grounder.grounded)
 			{
 				grounder.Unground();
@@ -143,6 +147,7 @@ public class PlayerController : MonoBehaviour, Damagable//, Slappable
 			damageTimer = 3f;
 			//QuickEffectsPool.Get("Damage", tHead.position, Quaternion.LookRotation(tHead.forward)).Play();
 		}
+		//else kill player.
 		else
 		{
 			Die(damage.dir);
@@ -151,7 +156,7 @@ public class PlayerController : MonoBehaviour, Damagable//, Slappable
 	}
 
 	//Turns on Postprocessing. 
-	//Enables decapitated head camera.
+	//Enables the camera that simulates the decapitated head.
 	//Disables Player.
 	public void Die(Vector3 dir)
 	{
@@ -163,8 +168,6 @@ public class PlayerController : MonoBehaviour, Damagable//, Slappable
 		playerDecapitate.gameObject.SetActive(true);
 		playerDecapitate.Decapitate(tHead, dir);
 		base.gameObject.SetActive(false);
-		
-	
 	}
 
 	private void JumpOrClimb()
