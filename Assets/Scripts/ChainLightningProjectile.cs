@@ -7,7 +7,7 @@ public class ChainLightningProjectile : Projectile
     public float chainDamage = 100;
     public float chainRadius = 1;
     public float chainDelay = 1;
-    private List<GameObject> chainedTargetList = new List<GameObject>();
+    public List<GameObject> chainedTargetList = new List<GameObject>();
 
 
     public override void CollisionBehavior(Collision c) {
@@ -42,23 +42,27 @@ public class ChainLightningProjectile : Projectile
     {
         Collider[] colliders =  Physics.OverlapSphere(hitObject.transform.position, chainRadius, collidableLayers);
 
-        float distance;
-        float minDistance = chainRadius;
-        Collider targetCollider = null;
-        //gets the closest one target only
-        for (int i = 0; i < colliders.Length; i++)
+        if (colliders[0])
         {
-            if (colliders[i] != null && !chainedTargetList.Contains(colliders[i].gameObject))
+            float distance;
+            float minDistance = chainRadius;
+            Collider targetCollider = new Collider();
+            //gets the closest one target only
+            for (int i = 0; i < colliders.Length; i++)
             {
-                distance = Vector3.Distance(hitObject.transform.position, colliders[i].ClosestPoint(hitObject.transform.position));
-                if (distance < minDistance)
+                if (colliders[i] != null && !chainedTargetList.Contains(colliders[i].gameObject))
                 {
-                    minDistance = distance;
-                    targetCollider = colliders[i];
+                    distance = Vector3.Distance(hitObject.transform.position, colliders[i].ClosestPoint(hitObject.transform.position));
+                    if (distance < minDistance)
+                    {
+                        minDistance = distance;
+                        targetCollider = colliders[i];
+                    }
                 }
             }
+            return targetCollider.gameObject;
         }
-        return targetCollider.gameObject;
+        return null;
     }
 
 }
