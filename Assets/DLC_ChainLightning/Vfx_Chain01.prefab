@@ -273,6 +273,7 @@ GameObject:
   - component: {fileID: 750609789270151035}
   - component: {fileID: 1896823965184262519}
   - component: {fileID: 7595834983049777901}
+  - component: {fileID: 5601822302332594880}
   m_Layer: 0
   m_Name: Vfx_Chain01
   m_TagString: Untagged
@@ -336,6 +337,23 @@ PlayableDirector:
     value: {fileID: 1896823965184262519}
   m_ExposedReferences:
     m_References: []
+--- !u!114 &5601822302332594880
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3683659731650464279}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0d3b1ee0197c2394dabb784752ee8ecd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  maxLifeTime: 0.5
+  offset: {x: 0, y: 1.5, z: 0}
+  lineRenderers:
+  - {fileID: 2199848854242180747}
+  - {fileID: 1739015873658660680}
 --- !u!1 &4435592151111178096
 GameObject:
   m_ObjectHideFlags: 0
