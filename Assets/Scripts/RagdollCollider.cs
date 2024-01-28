@@ -6,11 +6,11 @@ using UnityEngine;
 //acts as its secondary collider to detect damage and slap.
 public class RagdollCollider : MonoBehaviour, Damagable, Slappable
 {
-	public EnemyMove enemy { get; private set; }
+	public Enemy enemy { get; private set; }
 
 	private void Awake()
 	{
-		enemy = GetComponentInParent<EnemyMove>();
+		enemy = GetComponentInParent<Enemy>();
 	}
 
 	public void Slap(Vector3 dir)

@@ -34,7 +34,7 @@ public class ObjectFracture : MonoBehaviour, Slappable, Damagable
     public bool sleep;
 
 	//a list of enemies to be activated when exiting the sleep.
-	public EnemyMove[] activateEnemies;
+	public Enemy[] activateEnemies;
 
     public bool roomCleared;
 
@@ -43,7 +43,7 @@ public class ObjectFracture : MonoBehaviour, Slappable, Damagable
 	{
 		//activates the enemies when slapped
 		if(activateEnemies.Length!=0){
-			foreach(EnemyMove enemy in activateEnemies){
+			foreach(Enemy enemy in activateEnemies){
 				enemy.gameObject.SetActive(true);
 			}
 		}
@@ -52,7 +52,7 @@ public class ObjectFracture : MonoBehaviour, Slappable, Damagable
 	
 		//Look for enemies within range and angle.
 		//Adjusts direction and flies towards it.
-		foreach (EnemyMove enemy in activateEnemies)
+		foreach (Enemy enemy in activateEnemies)
 		{
 			if (enemy.dead)
 			{
@@ -81,7 +81,7 @@ public class ObjectFracture : MonoBehaviour, Slappable, Damagable
 	{
 		//activates the enemies when attacked
 		if(activateEnemies.Length!=0){
-			foreach(EnemyMove enemy in activateEnemies){
+			foreach(Enemy enemy in activateEnemies){
 				enemy.gameObject.SetActive(true);
 			}
 		}
@@ -185,8 +185,8 @@ public class ObjectFracture : MonoBehaviour, Slappable, Damagable
 		//slow the time a while when enemies on list are ded
 		if(!roomCleared){
 			int deathCount = 0;
-			foreach(EnemyMove enemy in activateEnemies){
-				if(enemy.dead){
+			foreach(Enemy enemy in activateEnemies){
+				if(enemy && enemy.dead){
 					deathCount++;
 				}
 			}

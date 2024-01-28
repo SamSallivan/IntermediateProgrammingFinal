@@ -9,7 +9,7 @@ public class ThrowedWeapon : Weapon
 
 	//can be slapped
 	//looks for close enemy and flies towards it
-    public void Slap(Vector3 dir){
+    public override void Slap(Vector3 dir){
 
         base.Slap(dir);
 
@@ -23,8 +23,8 @@ public class ThrowedWeapon : Weapon
 			else
 			{
                 
-				EnemyMove[] enemies = FindObjectsOfType<EnemyMove>(true);
-                foreach (EnemyMove enemy in enemies)
+				Enemy[] enemies = FindObjectsOfType<Enemy>(true);
+                foreach (Enemy enemy in enemies)
 				{
 					if (enemy.dead)
 					{

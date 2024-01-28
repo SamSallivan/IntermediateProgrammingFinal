@@ -13,7 +13,7 @@ public class FloatingWeapon : Weapon
 		tMesh = base.t.GetChild(0).transform;
 	}
 
-	private void Update()
+	public  override void Update()
 	{
 		if ((bool)tMesh)
 		{

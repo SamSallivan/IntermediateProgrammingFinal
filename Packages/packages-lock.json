@@ -7,6 +7,15 @@
       "dependencies": {},
       "url": "https://packages.unity.com"
     },
+    "com.domybest.mybox": {
+      "version": "https://github.com/Deadcows/MyBox.git",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {
+        "com.unity.ugui": "1.0.0"
+      },
+      "hash": "f3b54077f29cf8ca8ede67c26298b717164164c1"
+    },
     "com.unity.cinemachine": {
       "version": "2.8.4",
       "depth": 0,
