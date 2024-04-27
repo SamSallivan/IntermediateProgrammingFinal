@@ -7,7 +7,7 @@ public class ChainLightningProjectile : Projectile
     public float chainDamage = 100;
     public float chainRadius = 1;
     public float chainDelay = 1;
-    public List<GameObject> chainedTargetList = new List<GameObject>();
+    private List<GameObject> chainedTargetList = new List<GameObject>();
 
 
     public override void CollisionBehavior(Collision c) {
@@ -42,27 +42,23 @@ public class ChainLightningProjectile : Projectile
     {
         Collider[] colliders =  Physics.OverlapSphere(hitObject.transform.position, chainRadius, collidableLayers);
 
-        if (colliders[0])
+        float distance;
+        float minDistance = chainRadius;
+        Collider targetCollider = null;
+        //gets the closest one target only
+        for (int i = 0; i < colliders.Length; i++)
         {
-            float distance;
-            float minDistance = chainRadius;
-            Collider targetCollider = new Collider();
-            //gets the closest one target only
-            for (int i = 0; i < colliders.Length; i++)
+            if (colliders[i] != null && !chainedTargetList.Contains(colliders[i].gameObject))
             {
-                if (colliders[i] != null && !chainedTargetList.Contains(colliders[i].gameObject))
+                distance = Vector3.Distance(hitObject.transform.position, colliders[i].ClosestPoint(hitObject.transform.position));
+                if (distance < minDistance)
                 {
-                    distance = Vector3.Distance(hitObject.transform.position, colliders[i].ClosestPoint(hitObject.transform.position));
-                    if (distance < minDistance)
-                    {
-                        minDistance = distance;
-                        targetCollider = colliders[i];
-                    }
+                    minDistance = distance;
+                    targetCollider = colliders[i];
                 }
             }
-            return targetCollider.gameObject;
         }
-        return null;
+        return targetCollider.gameObject;
     }
 
 }
