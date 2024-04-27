@@ -11,7 +11,6 @@ public class Actor_ChainLightning : MonoBehaviour
     public void Initialize(Settings_ChainLightning settings, Enemy sourceEnemy)
     {
         this.settings = settings;
-        Instantiate(settings.hitVfx, sourceEnemy.transform.position, Quaternion.identity);
         historyTargetList.Add(sourceEnemy);
         StartCoroutine(ChainLightning(sourceEnemy));
     }

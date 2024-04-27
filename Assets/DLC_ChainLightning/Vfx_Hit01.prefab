@@ -5137,7 +5137,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c1a5877b4e146234faab6fc00bbfd8f1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxLifeTime: 0.5
+  maxLifeTime: 0.3
   offset: {x: 0, y: 1.5, z: 0}
 --- !u!1 &7936836707114246852
 GameObject:
