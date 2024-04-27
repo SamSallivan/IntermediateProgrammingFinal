@@ -27,7 +27,7 @@ public class Weapon : MonoBehaviour, Slappable
         materialTimer = 1;
 	}
 
-	public virtual void Update(){
+	public void Update(){
         MaterialUpdate();
 	}
 

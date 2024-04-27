@@ -1,6 +1,5 @@
 {
   "dependencies": {
-    "com.domybest.mybox": "https://github.com/Deadcows/MyBox.git",
     "com.unity.cinemachine": "2.8.4",
     "com.unity.collab-proxy": "1.15.7",
     "com.unity.feature.development": "1.0.1",
