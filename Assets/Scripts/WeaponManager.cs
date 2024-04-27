@@ -23,7 +23,7 @@ public class WeaponManager : MonoBehaviour
 	private void Awake()
 	{
 		weapons = GetComponentsInChildren<WeaponController>(true);
-		slapController = GetComponentInChildren<SlapController>(true);
+		slapController = GetComponentInChildren<SlapController>();
 		p = GetComponentInParent<PlayerController>();
 		currentWeapon = -1;
 		Deactivate();
